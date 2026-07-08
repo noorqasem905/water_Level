@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مراقبة خزان المياه الذكي</title>
+    <style>
+        :root {
+            --bg-color: #f4f7f6;
+            --tank-white: #fcfcfc;
+            --tank-border: #d1d5db;
+            --water-color: #00a8ff;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        
+        .dashboard-card {
+            background: #ffffff;
+            padding: 30px 40px;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.06);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin: 0 0 5px 0;
+            font-size: 24px;
+        }
+        h3 {
+            color: #95a5a6;
+            margin: 0 0 35px 0;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* حاوية الخزان الكلية */
+        .tank-wrapper {
+            position: relative;
+            width: 220px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* غطاء الخزان المتعرج */
+        .tank-cap-top {
+            width: 60px;
+            height: 12px;
+            background-color: #2c3e50;
+            border-radius: 4px 4px 0 0;
+            z-index: 2;
+        }
+        .tank-cap-base {
+            width: 110px;
+            height: 16px;
+            background-color: var(--tank-white);
+            border: 4px solid var(--tank-border);
+            border-bottom: none;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-around;
+        }
+        .cap-ridge {
+            width: 10px;
+            height: 100%;
+            background-color: var(--tank-border);
+            border-radius: 2px;
+        }
+
+        /* جسم الخزان البلاستيكي الأبيض */
+        .tank-body {
+            width: 200px;
+            height: 300px;
+            background-color: rgba(252, 252, 252, 0.6);
+            border: 5px solid var(--tank-border);
+            border-radius: 10px 10px 35px 35px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: inset -10px 0 20px rgba(0,0,0,0.03), 0 10px 25px rgba(0,0,0,0.05);
+            backdrop-filter: blur(2px);
+        }
+
+        /* الحلقات الأفقية البارزة */
+        .tank-ribs {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            pointer-events: none;
+            z-index: 4;
+        }
+        .rib {
+            width: 100%;
+            height: 5px;
+            background-color: rgba(209, 213, 219, 0.5);
+            border-top: 1px solid rgba(255,255,255,0.8);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        /* النسبة المئوية الضخمة */
+        .percentage {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            top: 40%;
+            font-size: 42px;
+            font-weight: 800;
+            color: #1e293b;
+            z-index: 10;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        /* تصميم الماء والتدرج اللوني */
+        .water-container {
+            width: 100%;
+            height: 0%; 
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            background: linear-gradient(to top, #0072ff, #00c6ff);
+            transition: height 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1;
+        }
+
+        /* أنيميشن الموج */
+        .water-wave {
+            position: absolute;
+            top: -18px;
+            left: 0;
+            width: 200%;
+            height: 20px;
+            background: radial-gradient(circle at 50% -3px, transparent 10px, #00c6ff 11px);
+            background-size: 40px 20px;
+            animation: wave-move 2s infinite linear;
+        }
+
+        @keyframes wave-move {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-40px); }
+        }
+
+        /* صندوق القراءة السفلي */
+        .status-box {
+            margin-top: 30px;
+            padding: 12px 25px;
+            background: #f8fafc;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #334155;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-card">
+        <h1>خزان المياه الذكي (المعدل الموزون)</h1>
+        <h3>السعة الكلية: 3.00 متر (معدل آخر 10 محاولات)</h3>
+
+        <div class="tank-wrapper">
+            <div class="tank-cap-top"></div>
+            <div class="tank-cap-base">
+                <div class="cap-ridge"></div>
+                <div class="cap-ridge"></div>
+                <div class="cap-ridge"></div>
+            </div>
+            
+            <div class="tank-body">
+                <div class="percentage" id="percent-text">0%</div>
+
+                <div class="tank-ribs">
+                    <div class="rib"></div>
+                    <div class="rib"></div>
+                    <div class="rib"></div>
+                    <div class="rib"></div>
+                    <div class="rib"></div>
+                    <div class="rib"></div>
+                </div>
+
+                <div class="water-container" id="water-level">
+                    <div class="water-wave"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-box" id="status-text">جاري تجميع أول 10 قراءات...</div>
+    </div>
+
+    <script>
+        // Instead of fetching from Adafruit directly with a visible key,
+        // we hit our backend proxy server.
+        const url = `http://localhost:3000/api/tank`; 
+
+        // mصفوفة لتخزين آخر 10 قراءات محسوبة للماء
+        let readingsHistory = [];
+        const maxReadings = 10;
+
+        function updateTank() {
+            fetch(url) // No headers or keys needed here anymore!
+            .then(response => response.json())
+            .then(data => {
+                let rawValue = parseFloat(data.value);
+                if (isNaN(rawValue)) return; 
+
+                // 1. قلب القراءة لتصبح نسبة الماء الفعلي
+                let currentWaterPercent = 110 - rawValue;
+                if(currentWaterPercent > 110) currentWaterPercent = 110;
+                if(currentWaterPercent < 0) currentWaterPercent = 0;
+
+                // 2. إضافة القراءة الحالية للمصفوفة
+                readingsHistory.push(currentWaterPercent);
+
+                if (readingsHistory.length > maxReadings) {
+                    readingsHistory.shift();
+                }
+
+                // 3. حساب الـ Average
+                let sum = readingsHistory.reduce((a, b) => a + b, 0);
+                let avgWaterPercent = sum / readingsHistory.length;
+                let roundedPercent = Math.round(avgWaterPercent);
+
+                // 4. تحديث واجهة الخزان
+                document.getElementById('water-level').style.height = roundedPercent + '%';
+                document.getElementById('percent-text').innerText = roundedPercent + '%';
+                
+                let actualMeters = ((avgWaterPercent / 100) * 3).toFixed(2);
+                document.getElementById('status-text').innerText = `المستوى الحالي (معدل ${readingsHistory.length}/10): ${actualMeters} متر`;
+                document.getElementById('status-text').style.borderColor = "#00c6ff";
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                document.getElementById('status-text').innerText = "خطأ في قراءة بيانات الحساس!";
+                document.getElementById('status-text').style.borderColor = "#ef4444";
+            });
+        }
+
+        updateTank();
+        setInterval(updateTank, 3000);
+    </script>
+</body>
+</html>

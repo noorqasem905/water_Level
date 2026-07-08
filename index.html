@@ -211,7 +211,7 @@
     <script>
         // Instead of fetching from Adafruit directly with a visible key,
         // we hit our backend proxy server.
-        const url = `http://localhost:3000/api/tank`; 
+        const url = `https://my-smart-water-tank.onrender.com/api/tank`;
 
         // mصفوفة لتخزين آخر 10 قراءات محسوبة للماء
         let readingsHistory = [];
@@ -259,5 +259,6 @@
         updateTank();
         setInterval(updateTank, 3000);
     </script>
+    <script src="script.js"></script>
 </body>
 </html>

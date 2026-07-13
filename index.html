@@ -161,7 +161,7 @@
 
         /* صندوق القراءة السفلي */
         .status-box {
-            margin-top: 30px;
+            margin-top: 25px;
             padding: 12px 25px;
             background: #f8fafc;
             border-radius: 14px;
@@ -170,6 +170,16 @@
             color: #334155;
             border: 1px solid #e2e8f0;
             transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        /* نص توقيت آخر تحديث */
+        .timestamp-box {
+            margin-top: 10px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #64748b;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
     </style>
 </head>
@@ -177,7 +187,7 @@
 
     <div class="dashboard-card">
         <h1>خزان المياه الذكي (المعدل الموزون)</h1>
-        <h3>السعة الكلية: 3.00 متر (معدل آخر 10 محاولات)</h3>
+        <h3>مراقبة مستوى الماء الفعلي لحظة بلحظة</h3>
 
         <div class="tank-wrapper">
             <div class="tank-cap-top"></div>
@@ -205,57 +215,64 @@
             </div>
         </div>
 
-        <div class="status-box" id="status-text">جاري تجميع أول 10 قراءات...</div>
+        <div class="status-box" id="status-text">جاري تجميع القراءات وحساب المعدل...</div>
+        <div class="timestamp-box" id="timestamp-text">آخر تحديث: --:--:--</div>
     </div>
 
     <script>
-        // Instead of fetching from Adafruit directly with a visible key,
-        // we hit our backend proxy server.
         const url = `https://my-smart-water-tank.onrender.com/api/tank`;
 
-        // mصفوفة لتخزين آخر 10 قراءات محسوبة للماء
         let readingsHistory = [];
         const maxReadings = 10;
+        let lastLoggedValue = null; // لمراقبة تغير البيانات الفعلي
 
         function updateTank() {
-            fetch(url) // No headers or keys needed here anymore!
+            fetch(url) 
             .then(response => response.json())
             .then(data => {
                 let rawValue = parseFloat(data.value);
                 if (isNaN(rawValue)) return; 
 
-                // 1. قلب القراءة لتصبح نسبة الماء الفعلي
-                let currentWaterPercent = 110 - rawValue;
-                if(currentWaterPercent > 110) currentWaterPercent = 110;
+                // 1. القيمة قادمة كنسبة مئوية صافية وجاهزة من الـ ESP32
+                let currentWaterPercent = rawValue;
+                
+                // حماية النطاق بين 0 و 100
+                if(currentWaterPercent > 100) currentWaterPercent = 100;
                 if(currentWaterPercent < 0) currentWaterPercent = 0;
 
-                // 2. إضافة القراءة الحالية للمصفوفة
+                // 2. إضافة القراءة للمصفوفة لحساب الـ Average
                 readingsHistory.push(currentWaterPercent);
-
                 if (readingsHistory.length > maxReadings) {
                     readingsHistory.shift();
                 }
 
-                // 3. حساب الـ Average
+                // 3. حساب المعدل (Moving Average) لآخر 10 قراءات
                 let sum = readingsHistory.reduce((a, b) => a + b, 0);
                 let avgWaterPercent = sum / readingsHistory.length;
                 let roundedPercent = Math.round(avgWaterPercent);
 
-                // 4. تحديث واجهة الخزان
+                // 4. تحديث عناصر واجهة الخزان
                 document.getElementById('water-level').style.height = roundedPercent + '%';
                 document.getElementById('percent-text').innerText = roundedPercent + '%';
                 
-                let actualMeters = ((avgWaterPercent / 100) * 3).toFixed(2);
-                document.getElementById('status-text').innerText = `المستوى الحالي (معدل ${readingsHistory.length}/10): ${actualMeters} متر`;
+                document.getElementById('status-text').innerText = `المستوى الحالي (معدل ${readingsHistory.length}/10): ${roundedPercent}%`;
                 document.getElementById('status-text').style.borderColor = "#00c6ff";
+
+                // 5. تحديث طابع وقت آخر قراءة ناجحة (Timestamp)
+                let now = new Date();
+                let timeString = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                let dateString = now.toLocaleDateString('ar-EG', { year: 'numeric', month: '2-digit', day: '2-digit' });
+                
+                document.getElementById('timestamp-text').innerText = `آخر تحديث: ${dateString} في ${timeString}`;
             })
             .catch(error => {
                 console.error("Error:", error);
-                document.getElementById('status-text').innerText = "خطأ في قراءة بيانات الحساس!";
+                document.getElementById('status-text').innerText = "خطأ في اتصال السيرفر بالخزان!";
                 document.getElementById('status-text').style.borderColor = "#ef4444";
             });
         }
 
+        // تشغيل فوري عند التحميل، ثم الفحص التلقائي كل 3 ثوانٍ
         updateTank();
         setInterval(updateTank, 3000);
     </script>

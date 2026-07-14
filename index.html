@@ -215,8 +215,8 @@
             </div>
         </div>
 
-        <div class="status-box" id="status-text">جاري تجميع القراءات وحساب المعدل...</div>
-        <div class="timestamp-box" id="timestamp-text">آخر تحديث: --:--:--</div>
+        <div class="status-box" id="status-text">جاري جلب آخر قراءة من السيرفر...</div>
+        <div class="timestamp-box" id="timestamp-text">آخر تحديث في قاعدة البيانات: --:--:--</div>
     </div>
 
     <script>
@@ -224,7 +224,6 @@
 
         let readingsHistory = [];
         const maxReadings = 10;
-        let lastLoggedValue = null; // لمراقبة تغير البيانات الفعلي
 
         function updateTank() {
             fetch(url) 
@@ -233,10 +232,9 @@
                 let rawValue = parseFloat(data.value);
                 if (isNaN(rawValue)) return; 
 
-                // 1. القيمة قادمة كنسبة مئوية صافية وجاهزة من الـ ESP32
-                let currentWaterPercent = rawValue - 24;
+                // 1. القيمة قادمة كنسبة مئوية جاهزة من الـ ESP32
+                let currentWaterPercent = rawValue;
                 
-                // حماية النطاق بين 0 و 100
                 if(currentWaterPercent > 100) currentWaterPercent = 100;
                 if(currentWaterPercent < 0) currentWaterPercent = 0;
 
@@ -246,24 +244,31 @@
                     readingsHistory.shift();
                 }
 
-                // 3. حساب المعدل (Moving Average) لآخر 10 قراءات
+                // 3. حساب المعدل لآخر 10 قراءات
                 let sum = readingsHistory.reduce((a, b) => a + b, 0);
                 let avgWaterPercent = sum / readingsHistory.length;
                 let roundedPercent = Math.round(avgWaterPercent);
 
-                // 4. تحديث عناصر واجهة الخزان
+                // 4. تحديث واجهة الخزان
                 document.getElementById('water-level').style.height = roundedPercent + '%';
                 document.getElementById('percent-text').innerText = roundedPercent + '%';
-                
                 document.getElementById('status-text').innerText = `المستوى الحالي (معدل ${readingsHistory.length}/10): ${roundedPercent}%`;
                 document.getElementById('status-text').style.borderColor = "#00c6ff";
 
-                // 5. تحديث طابع وقت آخر قراءة ناجحة (Timestamp)
-                let now = new Date();
-                let timeString = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                let dateString = now.toLocaleDateString('ar-EG', { year: 'numeric', month: '2-digit', day: '2-digit' });
-                
-                document.getElementById('timestamp-text').innerText = `آخر تحديث: ${dateString} في ${timeString}`;
+                // 5. جلب توقيت آخر عنصر تم تسجيله في الـ database وتحويله لوقت محلي
+                // Adafruit و Render يرسلون الحقل باسم created_at بصيغة ISO (UTC)
+                if (data.created_at) {
+                    let dbDate = new Date(data.created_at);
+                    let timeString = dbDate.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    let dateString = dbDate.toLocaleDateString('ar-EG', { year: 'numeric', month: '2-digit', day: '2-digit' });
+                    
+                    document.getElementById('timestamp-text').innerText = `آخر تحديث في قاعدة البيانات: ${dateString} الساعة ${timeString}`;
+                } else {
+                    // في حال كان الـ Proxy سيرفر يرسل الوقت بحقل مختلف، نستخدم الوقت الحالي كاحتياط
+                    let now = new Date();
+                    let timeString = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+                    document.getElementById('timestamp-text').innerText = `آخر تحديث (لحظي): ${timeString}`;
+                }
             })
             .catch(error => {
                 console.error("Error:", error);
@@ -272,9 +277,8 @@
             });
         }
 
-        // تشغيل فوري عند التحميل، ثم الفحص التلقائي كل 3 ثوانٍ
         updateTank();
-        setInterval(updateTank, 3000);
+        setInterval(updateTank, 3000); // فحص السيرفر كل 3 ثوانٍ لجلب أي عنصر جديد فوراً
     </script>
     <script src="script.js"></script>
 </body>

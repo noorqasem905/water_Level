@@ -233,7 +233,7 @@
                 if (isNaN(rawValue)) return; 
 
                 // 1. القيمة قادمة كنسبة مئوية جاهزة من الـ ESP32
-                let currentWaterPercent = rawValue - 24+9;
+                let currentWaterPercent = rawValue - 9;
                 
                 if(currentWaterPercent > 100) currentWaterPercent = 100;
                 if(currentWaterPercent < 0) currentWaterPercent = 0;

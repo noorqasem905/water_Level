@@ -186,8 +186,8 @@
 <body>
 
     <div class="dashboard-card">
-        <h1>خزان المياه الذكي (المعدل الموزون)</h1>
-        <h3>مراقبة مستوى الماء الفعلي لحظة بلحظة</h3>
+        <h1>خزان المياه الذكي</h1>
+        <h3>مراقبة مستوى الماء</h3>
 
         <div class="tank-wrapper">
             <div class="tank-cap-top"></div>
@@ -267,7 +267,7 @@
                     // في حال كان الـ Proxy سيرفر يرسل الوقت بحقل مختلف، نستخدم الوقت الحالي كاحتياط
                     let now = new Date();
                     let timeString = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-                    document.getElementById('timestamp-text').innerText = `آخر تحديث (لحظي): ${timeString}`;
+                    document.getElementById('timestamp-text').innerText = `آخر تحديث (: ${timeString}`;
                 }
             })
             .catch(error => {
